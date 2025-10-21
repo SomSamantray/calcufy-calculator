@@ -159,7 +159,13 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
                   type: "text",
                   text: "Please select a calculation operation from the options below."
                 }
-              ]
+              ],
+              _meta: {
+                "openai/outputTemplate": {
+                  type: "text/html",
+                  url: `${WIDGET_HOST}/widgets/operation-selector.html`
+                }
+              }
             },
             id
           });
@@ -176,7 +182,13 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
                   type: "text",
                   text: `Please enter two numbers to ${operation}.`
                 }
-              ]
+              ],
+              _meta: {
+                "openai/outputTemplate": {
+                  type: "text/html",
+                  url: `${WIDGET_HOST}/widgets/number-input.html`
+                }
+              }
             },
             id
           });
@@ -196,7 +208,21 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
                   type: "text",
                   text: `${number1} ${operationSymbol} ${number2} = ${result}`
                 }
-              ]
+              ],
+              structuredContent: {
+                step: "show-result",
+                operation: operation,
+                operationSymbol: operationSymbol,
+                number1: number1,
+                number2: number2,
+                result: result
+              },
+              _meta: {
+                "openai/outputTemplate": {
+                  type: "text/html",
+                  url: `${WIDGET_HOST}/widgets/result-display.html`
+                }
+              }
             },
             id
           });
