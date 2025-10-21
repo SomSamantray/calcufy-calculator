@@ -15,15 +15,18 @@ function ResultDisplay() {
   const [showAnimation, setShowAnimation] = useState(false);
 
   useEffect(() => {
-    // Read data from window.openai.toolOutput
-    if (window.openai?.toolOutput) {
-      const output = window.openai.toolOutput;
-      if (output.structuredContent) {
-        setData(output.structuredContent);
+    // Listen for tool response data
+    const handleToolResponse = (event: any) => {
+      const resultData = event.detail?.structuredContent as ResultData;
+      if (resultData) {
+        setData(resultData);
         // Trigger animation
         setTimeout(() => setShowAnimation(true), 100);
       }
-    }
+    };
+
+    window.addEventListener('openai:tool_response', handleToolResponse);
+    return () => window.removeEventListener('openai:tool_response', handleToolResponse);
   }, []);
 
   const getGradient = () => {
@@ -110,16 +113,7 @@ function ResultDisplay() {
 }
 
 // Mount the component
-const root = document.getElementById('result-display-root');
+const root = document.getElementById('widget-root');
 if (root) {
   createRoot(root).render(<ResultDisplay />);
-}
-
-// TypeScript declarations
-declare global {
-  interface Window {
-    openai?: {
-      toolOutput?: any;
-    };
-  }
 }

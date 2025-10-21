@@ -1,4 +1,4 @@
-import React, { useCallback, useEffect, useState } from 'react';
+import React, { useCallback } from 'react';
 import { createRoot } from 'react-dom/client';
 import useEmblaCarousel from 'embla-carousel-react';
 import './styles.css';
@@ -76,14 +76,9 @@ function OperationSelector() {
   });
 
   const handleSelect = useCallback((operationId: string) => {
-    // Call the MCP tool with the selected operation
-    if (window.openai?.callTool) {
-      window.openai.callTool({
-        name: 'calcufy_calculator',
-        arguments: {
-          operation: operationId
-        }
-      });
+    // Notify ChatGPT that an operation was selected
+    if (window.openai?.widget) {
+      window.openai.widget.setState({ selectedOperation: operationId });
     }
   }, []);
 
@@ -121,18 +116,18 @@ function OperationSelector() {
 }
 
 // Mount the component
-const root = document.getElementById('operation-selector-root');
+const root = document.getElementById('widget-root');
 if (root) {
   createRoot(root).render(<OperationSelector />);
 }
 
-// TypeScript declarations
+// Extend window interface for TypeScript
 declare global {
   interface Window {
     openai?: {
-      callTool?: (params: { name: string; arguments: Record<string, any> }) => void;
-      toolOutput?: any;
-      toolInput?: any;
+      widget?: {
+        setState: (state: any) => void;
+      };
     };
   }
 }
