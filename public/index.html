@@ -1,0 +1,173 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Calcufy Calculator - MCP App</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 20px;
+        }
+        .container {
+            background: white;
+            border-radius: 20px;
+            padding: 40px;
+            max-width: 600px;
+            box-shadow: 0 20px 60px rgba(0,0,0,0.3);
+        }
+        h1 {
+            color: #667eea;
+            margin-bottom: 10px;
+            font-size: 2.5em;
+        }
+        .subtitle {
+            color: #666;
+            margin-bottom: 30px;
+            font-size: 1.1em;
+        }
+        .status {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            padding: 15px;
+            background: #f0fdf4;
+            border: 2px solid #10b981;
+            border-radius: 10px;
+            margin-bottom: 30px;
+        }
+        .status-dot {
+            width: 12px;
+            height: 12px;
+            background: #10b981;
+            border-radius: 50%;
+            animation: pulse 2s infinite;
+        }
+        @keyframes pulse {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0.5; }
+        }
+        .info {
+            background: #f8fafc;
+            padding: 20px;
+            border-radius: 10px;
+            margin-bottom: 20px;
+        }
+        .info h3 {
+            color: #334155;
+            margin-bottom: 10px;
+        }
+        .info p {
+            color: #64748b;
+            line-height: 1.6;
+        }
+        .endpoints {
+            list-style: none;
+            padding: 0;
+        }
+        .endpoints li {
+            padding: 10px;
+            background: #f1f5f9;
+            margin-bottom: 10px;
+            border-radius: 8px;
+            font-family: monospace;
+            font-size: 0.9em;
+        }
+        .endpoints li strong {
+            color: #667eea;
+        }
+        .link {
+            color: #667eea;
+            text-decoration: none;
+            font-weight: 600;
+        }
+        .link:hover {
+            text-decoration: underline;
+        }
+        .badge {
+            display: inline-block;
+            padding: 4px 12px;
+            background: #667eea;
+            color: white;
+            border-radius: 20px;
+            font-size: 0.85em;
+            margin-left: 10px;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🧮 Calcufy Calculator</h1>
+        <p class="subtitle">Interactive MCP App for ChatGPT</p>
+
+        <div class="status">
+            <div class="status-dot"></div>
+            <strong>Server Status: Online</strong>
+        </div>
+
+        <div class="info">
+            <h3>About This App</h3>
+            <p>
+                Calcufy is a Model Context Protocol (MCP) server that provides an interactive calculator
+                for ChatGPT. It features beautiful React widgets with smooth animations for performing
+                basic arithmetic operations.
+            </p>
+        </div>
+
+        <div class="info">
+            <h3>API Endpoints</h3>
+            <ul class="endpoints">
+                <li><strong>GET</strong> /api/health - Health check endpoint</li>
+                <li><strong>POST</strong> /api/mcp - MCP server endpoint <span class="badge">Main</span></li>
+                <li><strong>GET</strong> /assets/* - Widget assets (CSS/JS)</li>
+            </ul>
+        </div>
+
+        <div class="info">
+            <h3>How to Use</h3>
+            <p>
+                1. Add this app to ChatGPT Settings → Apps & Connectors<br>
+                2. Use MCP URL: <code id="mcp-url"></code><br>
+                3. Enable the app in a conversation<br>
+                4. Start calculating!
+            </p>
+        </div>
+
+        <div class="info">
+            <h3>Features</h3>
+            <p>
+                ✅ Addition, Subtraction, Multiplication, Division<br>
+                ✅ Interactive carousel widget<br>
+                ✅ Decimal number support<br>
+                ✅ Error handling (division by zero)<br>
+                ✅ Beautiful animations
+            </p>
+        </div>
+
+        <div class="info">
+            <h3>Source Code</h3>
+            <p>
+                <a href="https://github.com/SomSamantray/calcufy-calculator" class="link" target="_blank">
+                    View on GitHub →
+                </a>
+            </p>
+        </div>
+    </div>
+
+    <script>
+        // Display the current URL as MCP endpoint
+        const mcpUrl = window.location.origin + '/api/mcp';
+        document.getElementById('mcp-url').textContent = mcpUrl;
+    </script>
+</body>
+</html>
