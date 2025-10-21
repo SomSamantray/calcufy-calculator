@@ -1,0 +1,13 @@
+{
+  "mcpServers": {
+    "calcufy-calculator": {
+      "command": "node",
+      "args": [
+        "/Users/apple/Documents/Calculator app/dist/server.js"
+      ],
+      "env": {
+        "OPENAI_WIDGET_HOST": "http://localhost:4444"
+      }
+    }
+  }
+}

@@ -1,0 +1,34 @@
+{
+  "version": 2,
+  "builds": [
+    {
+      "src": "dist/server.js",
+      "use": "@vercel/node"
+    },
+    {
+      "src": "assets/**",
+      "use": "@vercel/static"
+    }
+  ],
+  "routes": [
+    {
+      "src": "/assets/(.*)",
+      "dest": "/assets/$1"
+    },
+    {
+      "src": "/health",
+      "dest": "/dist/server.js"
+    },
+    {
+      "src": "/mcp",
+      "dest": "/dist/server.js"
+    },
+    {
+      "src": "/(.*)",
+      "dest": "/dist/server.js"
+    }
+  ],
+  "env": {
+    "NODE_ENV": "production"
+  }
+}
