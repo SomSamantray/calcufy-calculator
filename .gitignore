@@ -8,6 +8,9 @@ dist/
 assets/
 build/
 
+# But DO include public/assets (needed for Vercel)
+!public/assets/
+
 # Environment variables
 .env
 .env.local
