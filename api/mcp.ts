@@ -1,8 +1,6 @@
-import { Server } from "@modelcontextprotocol/sdk/server/index.js";
-import { CallToolRequestSchema, ListToolsRequestSchema } from "@modelcontextprotocol/sdk/types.js";
 import type { VercelRequest, VercelResponse } from '@vercel/node';
 
-const WIDGET_HOST = process.env.OPENAI_WIDGET_HOST || "http://localhost:4444";
+const WIDGET_HOST = process.env.OPENAI_WIDGET_HOST || "https://calcufy-calculator.vercel.app";
 
 // Calculator operation types
 type Operation = "add" | "subtract" | "multiply" | "divide";
@@ -37,137 +35,215 @@ function getOperationSymbol(operation: Operation): string {
   return symbols[operation];
 }
 
-// Create MCP server
-const server = new Server(
-  {
-    name: "calcufy-calculator",
-    version: "1.0.0"
-  },
-  {
-    capabilities: {
-      tools: {}
-    }
-  }
-);
-
-// Handle tool list requests
-server.setRequestHandler(ListToolsRequestSchema, async () => {
-  return {
-    tools: [
-      {
-        name: "calcufy_calculator",
-        description: "An interactive calculator that performs basic arithmetic operations (addition, subtraction, multiplication, division). The user can select an operation and provide two numbers to calculate.",
-        inputSchema: {
-          type: "object" as const,
-          properties: {
-            operation: {
-              type: "string" as const,
-              enum: ["add", "subtract", "multiply", "divide"],
-              description: "The operation to perform"
-            },
-            number1: {
-              type: "number" as const,
-              description: "The first number"
-            },
-            number2: {
-              type: "number" as const,
-              description: "The second number"
-            }
-          }
-        }
-      }
-    ]
-  };
-});
-
-// Handle tool calls
-server.setRequestHandler(CallToolRequestSchema, async (request) => {
-  if (request.params.name === "calcufy_calculator") {
-    const { operation, number1, number2 } = request.params.arguments as {
-      operation?: Operation;
-      number1?: number;
-      number2?: number;
-    };
-
-    // If no operation selected, show operation selector
-    if (!operation) {
-      return {
-        content: [
-          {
-            type: "text",
-            text: "Please select a calculation operation from the options below."
-          }
-        ]
-      };
-    }
-
-    // If operation selected but numbers not provided, show number input
-    if (number1 === undefined || number2 === undefined) {
-      return {
-        content: [
-          {
-            type: "text",
-            text: `Please enter two numbers to ${operation}.`
-          }
-        ]
-      };
-    }
-
-    // Perform calculation
-    try {
-      const result = calculate(operation as Operation, number1, number2);
-      const operationSymbol = getOperationSymbol(operation as Operation);
-
-      return {
-        content: [
-          {
-            type: "text",
-            text: `${number1} ${operationSymbol} ${number2} = ${result}`
-          }
-        ]
-      };
-    } catch (error) {
-      return {
-        content: [
-          {
-            type: "text",
-            text: `Error: ${error instanceof Error ? error.message : "Unknown error"}`
-          }
-        ],
-        isError: true
-      };
-    }
-  }
-
-  throw new Error(`Unknown tool: ${request.params.name}`);
-});
-
-// Vercel serverless function handler
+// MCP JSON-RPC handler
 export default async function handler(req: VercelRequest, res: VercelResponse) {
   // Enable CORS
   res.setHeader('Access-Control-Allow-Origin', '*');
   res.setHeader('Access-Control-Allow-Methods', 'GET, POST, OPTIONS');
   res.setHeader('Access-Control-Allow-Headers', 'Content-Type');
 
+  // Handle preflight
   if (req.method === 'OPTIONS') {
     res.status(200).end();
     return;
   }
 
-  if (req.method !== 'POST') {
-    res.status(405).json({ error: 'Method not allowed' });
+  // Only accept POST and GET
+  if (req.method !== 'POST' && req.method !== 'GET') {
+    res.status(405).json({
+      jsonrpc: "2.0",
+      error: { code: -32601, message: 'Method not allowed' },
+      id: null
+    });
+    return;
+  }
+
+  // Handle GET requests - return server info
+  if (req.method === 'GET') {
+    res.status(200).json({
+      name: "calcufy-calculator",
+      version: "1.0.0",
+      description: "Interactive Calculator MCP Server",
+      protocol: "MCP/JSON-RPC 2.0",
+      endpoints: {
+        mcp: "/api/mcp",
+        health: "/api/health"
+      }
+    });
     return;
   }
 
   try {
-    // Handle MCP request
-    const response = await (server as any).handleRequest(req.body);
-    res.status(200).json(response);
+    const request = req.body;
+
+    // Validate JSON-RPC request
+    if (!request || !request.method) {
+      res.status(400).json({
+        jsonrpc: "2.0",
+        error: { code: -32600, message: 'Invalid Request' },
+        id: request?.id || null
+      });
+      return;
+    }
+
+    const { method, params, id } = request;
+
+    // Handle initialize
+    if (method === 'initialize') {
+      res.status(200).json({
+        jsonrpc: "2.0",
+        result: {
+          protocolVersion: "2024-11-05",
+          capabilities: {
+            tools: {}
+          },
+          serverInfo: {
+            name: "calcufy-calculator",
+            version: "1.0.0"
+          }
+        },
+        id
+      });
+      return;
+    }
+
+    // Handle tools/list
+    if (method === 'tools/list') {
+      res.status(200).json({
+        jsonrpc: "2.0",
+        result: {
+          tools: [
+            {
+              name: "calcufy_calculator",
+              description: "An interactive calculator that performs basic arithmetic operations (addition, subtraction, multiplication, division). The user can select an operation and provide two numbers to calculate.",
+              inputSchema: {
+                type: "object",
+                properties: {
+                  operation: {
+                    type: "string",
+                    enum: ["add", "subtract", "multiply", "divide"],
+                    description: "The operation to perform"
+                  },
+                  number1: {
+                    type: "number",
+                    description: "The first number"
+                  },
+                  number2: {
+                    type: "number",
+                    description: "The second number"
+                  }
+                }
+              }
+            }
+          ]
+        },
+        id
+      });
+      return;
+    }
+
+    // Handle tools/call
+    if (method === 'tools/call') {
+      const { name, arguments: args } = params;
+
+      if (name === 'calcufy_calculator') {
+        const { operation, number1, number2 } = args || {};
+
+        // If no operation selected
+        if (!operation) {
+          res.status(200).json({
+            jsonrpc: "2.0",
+            result: {
+              content: [
+                {
+                  type: "text",
+                  text: "Please select a calculation operation from the options below."
+                }
+              ]
+            },
+            id
+          });
+          return;
+        }
+
+        // If operation selected but numbers not provided
+        if (number1 === undefined || number2 === undefined) {
+          res.status(200).json({
+            jsonrpc: "2.0",
+            result: {
+              content: [
+                {
+                  type: "text",
+                  text: `Please enter two numbers to ${operation}.`
+                }
+              ]
+            },
+            id
+          });
+          return;
+        }
+
+        // Perform calculation
+        try {
+          const result = calculate(operation as Operation, number1, number2);
+          const operationSymbol = getOperationSymbol(operation as Operation);
+
+          res.status(200).json({
+            jsonrpc: "2.0",
+            result: {
+              content: [
+                {
+                  type: "text",
+                  text: `${number1} ${operationSymbol} ${number2} = ${result}`
+                }
+              ]
+            },
+            id
+          });
+          return;
+        } catch (error) {
+          res.status(200).json({
+            jsonrpc: "2.0",
+            result: {
+              content: [
+                {
+                  type: "text",
+                  text: `Error: ${error instanceof Error ? error.message : "Unknown error"}`
+                }
+              ],
+              isError: true
+            },
+            id
+          });
+          return;
+        }
+      } else {
+        res.status(200).json({
+          jsonrpc: "2.0",
+          error: { code: -32601, message: `Unknown tool: ${name}` },
+          id
+        });
+        return;
+      }
+    }
+
+    // Unknown method
+    res.status(200).json({
+      jsonrpc: "2.0",
+      error: { code: -32601, message: `Method not found: ${method}` },
+      id
+    });
+
   } catch (error) {
     console.error('MCP request error:', error);
     res.status(500).json({
-      error: 'Internal server error',
-      message: error instanceof Error ? error.message : 'Unknown error'
+      jsonrpc: "2.0",
+      error: {
+        code: -32603,
+        message: 'Internal error',
+        data: error instanceof Error ? error.message : 'Unknown error'
+      },
+      id: null
     });
   }
 }
